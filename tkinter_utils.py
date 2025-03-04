@@ -1,8 +1,10 @@
 import os
+import cv2
+import numpy as np
 import tkinter as tk
 from PIL import ImageTk, Image
 
-class RenderWindow:
+class WindowRenderer:
 
     # Create RenderWindow object
     def __init__(self, image1, image2, image3,):
@@ -38,13 +40,25 @@ class RenderWindow:
         self.image3_tk = ImageTk.PhotoImage(self.image3)
         self.image3_copy_tk = ImageTk.PhotoImage(self.image3_copy)
 
-        # Add execution button
-        self.execute_button = tk.Button(self.root, text = "Run Segmentation", command = self.segment_image)
-        self.execute_button.grid(row = 3, column = 0, pady = 10)
+        # Add otsu button
+        self.otsu_button = tk.Button(self.root, text = "Otsu Segmentation", command = self.otsu_threshold)
+        self.otsu_button.grid(row = 3, column = 0, pady = 5)
+
+        # Add blurr button
+        self.blurr_button = tk.Button(self.root, text = "Blurr Segmentation", command = self.mean_shift)
+        self.blurr_button.grid(row = 4, column = 0, pady = 5)
+
+        # Add mean shift button
+        self.mean_shift_button = tk.Button(self.root, text = "Mean Shift Segmentation", command = self.otsu_threshold)
+        self.mean_shift_button.grid(row = 5, column = 0, pady = 5)
+
+        # Add segment button
+        self.segment_button = tk.Button(self.root, text = "Segment", command = self.otsu_threshold)
+        self.segment_button.grid(row = 6, column = 0, pady = 5)
 
         # Add reset button
         self.reset_button = tk.Button(self.root, text = "Reset", command = self.reset)
-        self.reset_button.grid(row = 3, column = 1, pady = 10)
+        self.reset_button.grid(row = 3, column = 1, pady = 5)
 
         # Render canvas
         self.update_canvas()
@@ -83,8 +97,68 @@ class RenderWindow:
 
         print("Canvas Update Finished...\n")
 
-    def segment_image(self):
+    def preprocess_images(self):
+        # Convert images to arrays
+        image1 = np.array(self.image1)
+        image2 = np.array(self.image2)
+        image3 = np.array(self.image3)
+
+        # Convert to grayscale
+        image1_gs = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+        image2_gs = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+        image3_gs = cv2.cvtColor(image3, cv2.COLOR_BGR2GRAY)
+
+        return image1, image2, image3, image1_gs, image2_gs, image3_gs
+
+    def otsu_threshold(self):
         print("Segmenting Images...")
+
+        # Ready images for processing
+        _, _, _, image1_gs, image2_gs, image3_gs = self.preprocess_images()
+
+        # Apply Otsu threshold
+        _, image1_otsu = cv2.threshold(image1_gs, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, image2_otsu = cv2.threshold(image2_gs, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, image3_otsu = cv2.threshold(image3_gs, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        # Update images
+        self.image1_copy = Image.fromarray(image1_otsu)
+        self.image2_copy = Image.fromarray(image2_otsu)
+        self.image3_copy = Image.fromarray(image3_otsu)
+
+        print("Done.\n")
+
+        # Redraw canvas with new images
+        self.update_canvas()
+
+    def mean_shift(self):
+        print("Segmenting Images...")
+
+        # Ready images for processing
+        image1, image2, _, _, _, _ = self.preprocess_images()
+
+        # Apply mean shift filtering
+        msf1 = cv2.pyrMeanShiftFiltering(image1, 20, 40)
+        msf2 = cv2.pyrMeanShiftFiltering(image2, 20, 40)
+
+        # # Update images
+        self.image1_copy = Image.fromarray(msf1)
+        self.image2_copy = Image.fromarray(msf2)
+
+        print("Done.\n")
+
+        # Redraw canvas with new images
+        self.update_canvas()
 
     def reset(self):
         print("Resetting Images...")
+
+        # Reset image copys
+        self.image1_copy = self.image1
+        self.image2_copy = self.image2
+        self.image3_copy = self.image3
+
+        print("Done.\n")
+
+        # Redraw canvas with default images
+        self.update_canvas()
