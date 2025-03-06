@@ -53,10 +53,6 @@ class WindowRenderer:
         self.mean_shift_button = tk.Button(self.root, text = "Mean Shift Segmentation", command = self.mean_shift_segmentation)
         self.mean_shift_button.grid(row = 5, column = 0, pady = 5)
 
-        # Add segment button
-        self.segment_button = tk.Button(self.root, text = "Segment", command = self.otsu_threshold)
-        self.segment_button.grid(row = 6, column = 0, pady = 5)
-
         # Add reset button
         self.reset_button = tk.Button(self.root, text = "Reset", command = self.reset)
         self.reset_button.grid(row = 3, column = 1, pady = 5)
