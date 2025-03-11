@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import skimage as sk
 import tkinter as tk
 from PIL import ImageTk, Image
 
@@ -41,17 +42,21 @@ class WindowRenderer:
         self.image3_tk = ImageTk.PhotoImage(self.image3)
         self.image3_copy_tk = ImageTk.PhotoImage(self.image3_copy)
 
-        # Add otsu button
-        self.otsu_button = tk.Button(self.root, text = "Otsu Segmentation", command = self.otsu_threshold)
-        self.otsu_button.grid(row = 3, column = 0, pady = 5)
+        # Add otsu button (binary classification)
+        self.otsu_button_binary = tk.Button(self.root, text = "Otsu Segmentation (Binary)", command = self.otsu_threshold_binary)
+        self.otsu_button_binary.grid(row = 3, column = 0, pady = 5)
+
+        # Add otsu button (multi class)
+        self.otsu_button_multi = tk.Button(self.root, text = "Otsu Segmentation (Multi-class)", command = self.otsu_threshold_multi)
+        self.otsu_button_multi.grid(row = 4, column = 0, pady = 5)
 
         # Add blurr button
         self.blurr_button = tk.Button(self.root, text = "Blurr Segmentation", command = self.blurr_segmentation)
-        self.blurr_button.grid(row = 4, column = 0, pady = 5)
+        self.blurr_button.grid(row = 5, column = 0, pady = 5)
 
         # Add mean shift button
         self.mean_shift_button = tk.Button(self.root, text = "Mean Shift Segmentation", command = self.mean_shift_segmentation)
-        self.mean_shift_button.grid(row = 5, column = 0, pady = 5)
+        self.mean_shift_button.grid(row = 6, column = 0, pady = 5)
 
         # Add reset button
         self.reset_button = tk.Button(self.root, text = "Reset", command = self.reset)
@@ -109,7 +114,7 @@ class WindowRenderer:
 
         return image1, image2, image3, image1_gs, image2_gs, image3_gs
 
-    def otsu_threshold(self):
+    def otsu_threshold_binary(self):
         print("Segmenting Images...")
 
         # Ready images for processing
@@ -124,6 +129,42 @@ class WindowRenderer:
         self.image1_copy = Image.fromarray(image1_otsu)
         self.image2_copy = Image.fromarray(image2_otsu)
         self.image3_copy = Image.fromarray(image3_otsu)
+
+        print("Done.\n")
+
+        # Redraw canvas with new images
+        self.update_canvas()
+
+    def otsu_threshold_multi(self):
+        print("Segmenting Images...")
+
+        # Ready images for processing
+        _, _, _, image1_gs, image2_gs, image3_gs = self.preprocess_images()
+
+        # Determine thresholds from images
+        threshold1 = sk.filters.threshold_multiotsu(image1_gs, 5)
+        threshold2 = sk.filters.threshold_multiotsu(image2_gs, 5)
+        threshold3 = sk.filters.threshold_multiotsu(image3_gs, 5)
+
+        # Load regions from images
+        regions1 = np.digitize(image1_gs, bins = threshold1)
+        regions2 = np.digitize(image2_gs, bins = threshold2)
+        regions3 = np.digitize(image3_gs, bins = threshold3)
+
+        # Scale the regions to use the full uint8 range (0-255)
+        regions1 = regions1 * 51
+        regions2 = regions2 * 51
+        regions3 = regions3 * 51
+
+        # Make regions compatible with tkinter
+        regions1 = regions1.astype(np.uint8)
+        regions2 = regions2.astype(np.uint8)
+        regions3 = regions3.astype(np.uint8)
+
+        # Update images
+        self.image1_copy = Image.fromarray(regions1)
+        self.image2_copy = Image.fromarray(regions2)
+        self.image3_copy = Image.fromarray(regions3)
 
         print("Done.\n")
 
