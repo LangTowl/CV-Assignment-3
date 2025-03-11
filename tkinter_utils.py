@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import skimage as sk
 import tkinter as tk
+from tkinter import ttk
 from PIL import ImageTk, Image
 
 class WindowRenderer:
@@ -49,6 +50,14 @@ class WindowRenderer:
         # Add otsu button (multi class)
         self.otsu_button_multi = tk.Button(self.root, text = "Otsu Segmentation (Multi-class)", command = self.otsu_threshold_multi)
         self.otsu_button_multi.grid(row = 4, column = 0, pady = 5)
+
+        # Add class selector for multi otsu
+        self.class_options = ["3", "4", "5"]
+        self.class_selector = ttk.Combobox(self.root, values = self.class_options, state = "readonly")
+        self.class_selector.set("3")
+        self.class_selector.set("Multi-class count")
+        self.class_selector.grid(row = 4, column = 1, pady = 10)
+        self.class_selector.bind("<<ComboboxSelected>>", self.multi_class_selector)
 
         # Add blurr button
         self.blurr_button = tk.Button(self.root, text = "Blurr Segmentation", command = self.blurr_segmentation)
@@ -114,6 +123,10 @@ class WindowRenderer:
 
         return image1, image2, image3, image1_gs, image2_gs, image3_gs
 
+    def multi_class_selector(self, event):
+        selected_value = self.class_selector.get()
+        print(f"New selection: {selected_value}\n")
+
     def otsu_threshold_binary(self):
         print("Segmenting Images...")
 
@@ -152,9 +165,9 @@ class WindowRenderer:
         regions3 = np.digitize(image3_gs, bins = threshold3)
 
         # Scale the regions to use the full uint8 range (0-255)
-        regions1 = regions1 * 51
-        regions2 = regions2 * 51
-        regions3 = regions3 * 51
+        regions1 = regions1 * (255 / int(self.class_selector.get()))
+        regions2 = regions2 * (255 / int(self.class_selector.get()))
+        regions3 = regions3 * (255 / int(self.class_selector.get()))
 
         # Make regions compatible with tkinter
         regions1 = regions1.astype(np.uint8)
